@@ -31,6 +31,12 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 			symbol.Location.Uri = defines.DocumentUri(uri)
 			symbols = append(symbols, symbol)
 		}),
+		withHandler(func(v *parser.Import) {
+			symbol := symbolFromImport(v)
+			symbol.Location.Uri = defines.DocumentUri(uri)
+			symbol.ImportPath = strings.Trim(v.Location, "\"")
+			symbols = append(symbols, symbol)
+		}),
 	)
 
 	return symbols, nil
@@ -97,6 +103,21 @@ func symbolFromField(f *parser.Field) Symbol {
 			},
 		},
 		Type: &f.Type,
+	}
+}
+
+func symbolFromImport(i *parser.Import) Symbol {
+	return Symbol{
+		Name: "",
+		Kind: defines.SymbolKindFile,
+		Location: defines.Location{
+			Uri: defines.DocumentUri(i.Meta.Pos.Filename),
+			Range: defines.Range{
+				Start: parserPositionToDefinesPosition(i.Meta.Pos),
+				End:   parserPositionToDefinesPosition(i.Meta.LastPos),
+			},
+		},
+		ImportPath: i.Location,
 	}
 }
 

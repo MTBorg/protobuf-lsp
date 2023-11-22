@@ -61,7 +61,9 @@ func (s *server) TextDocumentDidChange(ctx context.Context, params *defines.DidC
 
 func (s *server) TextDocumentDidOpen(ctx context.Context, params *defines.DidOpenTextDocumentParams) error {
 	uri := string(params.TextDocument.Uri)
-	s.cache.addDocument(uri, params.TextDocument.Text)
+	if err := s.cache.addDocument(uri, params.TextDocument.Text); err != nil {
+		return fmt.Errorf("add document: %w", err)
+	}
 	return nil
 }
 

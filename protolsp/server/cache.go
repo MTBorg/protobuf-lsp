@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/TobiasYin/go-lsp/lsp/defines"
 )
@@ -11,7 +12,11 @@ type Symbol struct {
 	Kind     defines.SymbolKind
 	Location defines.Location
 
+	// Only relevant for fields
 	Type *string
+
+	// Only relevant for imports
+	ImportPath string
 }
 
 func (s Symbol) toDefines() defines.SymbolInformation {
@@ -61,7 +66,7 @@ func (c *cache) getSymbol(textDocumentURI string, position defines.Position) (*d
 		return nil, fmt.Errorf("found no symbol at position %v", position)
 	}
 
-	targetSymbol, err := c.symbolDefinition(textDocumentURI, *symbol)
+	targetSymbol, err := c.symbolDefinition(*symbol)
 	if err != nil {
 		return nil, fmt.Errorf("symbol definition: %w", err)
 	}
@@ -89,6 +94,19 @@ func (c *cache) addDocument(uri string, content string) error {
 	}
 	c.symbols[uri] = symbols
 
+	for _, symbol := range symbols {
+		if symbol.ImportPath != "" {
+			content, err := os.ReadFile("./" + symbol.ImportPath)
+			if err != nil {
+				return fmt.Errorf("read import: %w", err)
+			}
+
+			if err := c.addDocument(uriFromImportPath(symbol.ImportPath), string(content)); err != nil {
+				return fmt.Errorf("add import: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -99,21 +117,30 @@ func positionBetween(p, start, end defines.Position) bool {
 		p.Character <= end.Character
 }
 
-func (c *cache) symbolDefinition(uri string, symbol Symbol) (*defines.SymbolInformation, error) {
-	symbols := c.symbols[uri]
-	var typ string
-	if symbol.Type != nil {
-		typ = *symbol.Type
-	}
-
-	for _, s := range symbols {
-
-		if s.Name == typ {
-			d := s.toDefines()
-
-			return &d, nil
+func (c *cache) symbolDefinition(symbol Symbol) (*defines.SymbolInformation, error) {
+	for _, symbols := range c.symbols {
+		var typ string
+		if symbol.Type != nil {
+			typ = *symbol.Type
 		}
-	}
 
+		for _, s := range symbols {
+
+			if s.Name == typ {
+				d := s.toDefines()
+
+				return &d, nil
+			}
+		}
+
+	}
 	return nil, fmt.Errorf("symbol not found")
+}
+
+func uriFromImportPath(importPath string) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("file://%s/%s", cwd, importPath)
 }
