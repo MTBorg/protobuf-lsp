@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/TobiasYin/go-lsp/lsp/defines"
@@ -106,6 +107,8 @@ func (c *cache) addDocument(uri string, content string) error {
 			}
 		}
 	}
+
+	logger.Debug("cache refreshed", slog.String("uri", uri))
 
 	return nil
 }

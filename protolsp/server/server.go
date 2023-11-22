@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/TobiasYin/go-lsp/lsp/defines"
 )
@@ -11,10 +12,16 @@ type server struct {
 	cache *cache
 }
 
+var logger slog.Logger
+
 func NewServer() *server {
 	return &server{
 		cache: newCache(),
 	}
+}
+
+func InitLogger(l slog.Logger) {
+	logger = l
 }
 
 func (s *server) Definition(ctx context.Context, params *defines.DefinitionParams) (*[]defines.LocationLink, error) {
