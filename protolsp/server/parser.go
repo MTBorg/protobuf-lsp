@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,23 +24,30 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 	Walk(got,
 		withHandler(func(m *parser.Message) {
 			symbol := symbolFromMessage(m)
-			symbol.Location.Uri = defines.DocumentUri(uri)
+			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 		withHandler(func(v *parser.Field) {
 			symbol := symbolFromField(v)
-			symbol.Location.Uri = defines.DocumentUri(uri)
+			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 		withHandler(func(v *parser.Import) {
 			symbol := symbolFromImport(v)
-			symbol.Location.Uri = defines.DocumentUri(uri)
-			symbol.ImportPath = strings.Trim(v.Location, "\"")
+			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 	)
 
 	return symbols, nil
+}
+
+func prettyPrint(symbols []Symbol) {
+	d, err := json.MarshalIndent(symbols, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%s\n", d)
 }
 
 func Walk(proto *parser.Proto, handlers ...handler) {
@@ -77,47 +85,46 @@ func getChildren(v parser.Visitee) []parser.Visitee {
 	return nil
 }
 
-func symbolFromMessage(m *parser.Message) Symbol {
-	return Symbol{
+func symbolFromMessage(m *parser.Message) MessageSymbol {
+	return MessageSymbol{
+		SymbolBase: SymbolBase{
+			Loc: defines.Location{
+				Range: defines.Range{
+					Start: parserPositionToDefinesPosition(m.Meta.Pos),
+					End:   parserPositionToDefinesPosition(m.Meta.LastPos),
+				},
+			},
+		},
 		Name: m.MessageName,
-		Kind: defines.SymbolKindStruct,
-		Location: defines.Location{
-			Uri: defines.DocumentUri(m.Meta.Pos.Filename),
-			Range: defines.Range{
-				Start: parserPositionToDefinesPosition(m.Meta.Pos),
-				End:   parserPositionToDefinesPosition(m.Meta.LastPos),
-			},
-		},
 	}
 }
 
-func symbolFromField(f *parser.Field) Symbol {
-	return Symbol{
+func symbolFromField(f *parser.Field) FieldSymbol {
+	return FieldSymbol{
+		SymbolBase: SymbolBase{
+			Loc: defines.Location{
+				Range: defines.Range{
+					Start: parserPositionToDefinesPosition(f.Meta.Pos),
+					End:   parserPositionToDefinesPosition(f.Meta.LastPos),
+				},
+			},
+		},
 		Name: f.FieldName,
-		Kind: defines.SymbolKindField,
-		Location: defines.Location{
-			Uri: defines.DocumentUri(f.Meta.Pos.Filename),
-			Range: defines.Range{
-				Start: parserPositionToDefinesPosition(f.Meta.Pos),
-				End:   parserPositionToDefinesPosition(f.Meta.LastPos),
-			},
-		},
-		Type: &f.Type,
+		Type: f.Type,
 	}
 }
 
-func symbolFromImport(i *parser.Import) Symbol {
-	return Symbol{
-		Name: "",
-		Kind: defines.SymbolKindFile,
-		Location: defines.Location{
-			Uri: defines.DocumentUri(i.Meta.Pos.Filename),
-			Range: defines.Range{
-				Start: parserPositionToDefinesPosition(i.Meta.Pos),
-				End:   parserPositionToDefinesPosition(i.Meta.LastPos),
+func symbolFromImport(i *parser.Import) ImportSymbol {
+	return ImportSymbol{
+		SymbolBase: SymbolBase{
+			Loc: defines.Location{
+				Range: defines.Range{
+					Start: parserPositionToDefinesPosition(i.Meta.Pos),
+					End:   parserPositionToDefinesPosition(i.Meta.LastPos),
+				},
 			},
 		},
-		ImportPath: i.Location,
+		ImportPath: strings.Trim(i.Location, "\""),
 	}
 }
 
