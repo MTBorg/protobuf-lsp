@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "/test";
+
+package test;
+
+// Define a message for the person's address
+message Address {
+  string street = 1;
+  string city = 2;
+  string zip_code = 3;
+}
