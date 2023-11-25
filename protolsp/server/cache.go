@@ -29,9 +29,9 @@ func (c *cache) getDocument(uri string) *string {
 }
 
 func (c *cache) getSymbol(textDocumentURI string, position defines.Position) (*defines.SymbolInformation, error) {
-	symbol := c.lookup.ByURI(textDocumentURI).AtPosition(position).First()
-	if symbol == nil {
-		return nil, fmt.Errorf("found no symbol at position %+v", position)
+	cursorSymbol := symbolUnderCursor(c.lookup, position)
+	if cursorSymbol == nil {
+		return nil, fmt.Errorf("found no symbol under cursor at position %+v", position)
 	}
 
 	targetSymbol, err := c.typeDefinition(*cursorSymbol)
@@ -58,11 +58,10 @@ func (c *cache) getSymbolReferences(textDocumentURI string, position defines.Pos
 		rootSymbol = s
 	}
 
-	var name string
 	if _, ok := rootSymbol.(Nameable); !ok {
 		return nil, fmt.Errorf("symbol %T is not nameable", rootSymbol)
 	}
-	name = rootSymbol.(Nameable).Name()
+	name := rootSymbol.(Nameable).Name()
 
 	symbols := FilterUsingSymbolTypePredicate(c.lookup, func(m FieldSymbol) bool {
 		return m.Type == name
@@ -124,10 +123,18 @@ func (c *cache) mergeSymbolsFromFile(fileURI string, symbols []Symbol) []Symbol 
 }
 
 func positionBetween(p, start, end defines.Position) bool {
-	return p.Line >= start.Line &&
-		p.Line <= end.Line &&
-		p.Character >= start.Character &&
-		p.Character <= end.Character
+	switch {
+	case p.Line > start.Line && p.Line < end.Line:
+		return true
+	case p.Line == start.Line && p.Line == end.Line:
+		return p.Character >= start.Character && p.Character <= end.Character
+	case p.Line == start.Line:
+		return p.Character >= start.Character
+	case p.Line == end.Line:
+		return p.Character <= end.Character
+	default:
+		return false
+	}
 }
 
 func (c *cache) typeDefinition(symbol Symbol) (Symbol, error) {
@@ -137,7 +144,7 @@ func (c *cache) typeDefinition(symbol Symbol) (Symbol, error) {
 	}
 
 	match := FilterUsingSymbolTypePredicate(c.lookup, func(m MessageSymbol) bool {
-		return m.Name == fieldSymbol.Type
+		return m.Name() == fieldSymbol.Type
 	}).First()
 	if match == nil {
 		return nil, fmt.Errorf("symbol %q not found", fieldSymbol.Type)

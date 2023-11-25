@@ -51,6 +51,7 @@ func withProtobuf(server *lsp.Server, protobuf protolsp.ProtoLSP) {
 	server.OnDefinition(protobuf.Definition)
 	server.OnDidChangeTextDocument(protobuf.TextDocumentDidChange)
 	server.OnDidOpenTextDocument(protobuf.TextDocumentDidOpen)
+	server.OnReferences(protobuf.References)
 }
 
 // LogForwarder forwards bytes to a structured logger.

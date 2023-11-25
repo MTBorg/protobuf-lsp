@@ -11,14 +11,22 @@ type Symbol interface {
 	URI() string
 }
 
+type Nameable interface {
+	Name() string
+}
+
 type SymbolBase struct {
 	// Don't use the URI from the Location, because it seems to always be empty
+	// TODO: Investigate why
 	Loc defines.Location
 	Uri string
 }
 
 func (b SymbolBase) Location() defines.Location {
-	return b.Loc
+	uri := b.Uri
+	loc := b.Loc
+	loc.Uri = defines.DocumentUri(uri)
+	return loc
 }
 
 func (b SymbolBase) URI() string {
@@ -53,12 +61,13 @@ func (l SymbolLookup) BySymbolType(typ Symbol) SymbolLookup {
 }
 
 func (l SymbolLookup) AtPosition(p defines.Position) SymbolLookup {
+	var result SymbolLookup
 	for _, symbol := range l {
 		if positionBetween(p, symbol.Location().Range.Start, symbol.Location().Range.End) {
-			return SymbolLookup{symbol}
+			result = append(result, symbol)
 		}
 	}
-	return SymbolLookup{}
+	return result
 }
 
 func FilterUsingSymbolTypePredicate[T Symbol](l SymbolLookup, pred func(t T) bool) SymbolLookup {
@@ -94,7 +103,11 @@ type ImportSymbol struct {
 type MessageSymbol struct {
 	SymbolBase
 
-	Name string
+	name string
+}
+
+func (m MessageSymbol) Name() string {
+	return m.name
 }
 
 func toDefines(symbol Symbol) defines.SymbolInformation {

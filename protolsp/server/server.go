@@ -74,6 +74,17 @@ func (s *server) TextDocumentDidOpen(ctx context.Context, params *defines.DidOpe
 	return nil
 }
 
+func (s *server) References(ctx context.Context, params *defines.ReferenceParams) (*[]defines.Location, error) {
+	uri := string(params.TextDocument.Uri)
+	position := params.Position
+
+	locations, err := s.cache.getSymbolReferences(uri, position)
+	if err != nil {
+		return nil, err
+	}
+	return locations, nil
+}
+
 func applyChange(content string, change defines.TextDocumentContentChangeEvent) (string, error) {
 	if s, ok := change.Text.(string); ok {
 		return s, nil

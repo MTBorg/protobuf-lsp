@@ -13,3 +13,10 @@ message Person {
 
   Address address = 4;
 }
+
+message Company {
+  string name = 1;
+  int32 id = 2;
+
+  Address address = 4;
+}

@@ -39,6 +39,8 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 		}),
 	)
 
+	prettyPrint(symbols)
+
 	return symbols, nil
 }
 
@@ -95,7 +97,7 @@ func symbolFromMessage(m *parser.Message) MessageSymbol {
 				},
 			},
 		},
-		Name: m.MessageName,
+		name: m.MessageName,
 	}
 }
 
