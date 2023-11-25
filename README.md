@@ -6,6 +6,7 @@ expect any stability.
 ## Implemented features
 
 - [Go to definition](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition)(WIP)
+- [Find references](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_references)(WIP)
 
 ## Usage
 
