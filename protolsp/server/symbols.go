@@ -126,3 +126,21 @@ func toDefines(symbol Symbol) defines.SymbolInformation {
 
 	return info
 }
+
+func (l SymbolLookup) mergeWithURI(symbols []Symbol, uri string) SymbolLookup {
+	var result []Symbol
+
+	// Remove all symbols associated with the fileURI
+	for _, symbol := range l {
+		if string(symbol.Location().Uri) != uri {
+			result = append(result, symbol)
+		}
+	}
+
+	// Add all symbols from the fileURI
+	for _, symbol := range symbols {
+		result = append(result, symbol)
+	}
+
+	return result
+}
