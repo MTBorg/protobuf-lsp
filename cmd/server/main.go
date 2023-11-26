@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -15,6 +16,7 @@ import (
 )
 
 var (
+	mode         = flag.String("mode", "stdio", "server mode (stdio|http)")
 	address      = flag.String("address", "localhost:8080", "address to listen on")
 	logLevel     = flag.String("log-level", "info", "log level")
 	logLSPServer = flag.Bool("log-lsp-server", true, "log lsp server messages")
@@ -23,24 +25,19 @@ var (
 func main() {
 	flag.Parse()
 
-	level := parseLogLevel(*logLevel)
-	// To be able to control and suppress logging of the LSP server, we forward
-	// the logs to our structured logger.
-	slogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-	}))
-	logForwarder := &LogForwarder{destination: slogger, disabled: !*logLSPServer}
-	logger := log.New(logForwarder, "", log.LstdFlags)
-	logs.Init(logger)
+	setupLoggers()
 
-	server := lsp.NewServer(&lsp.Options{
-		Network: "tcp",
-		Address: *address,
+	options := &lsp.Options{
 		CompletionProvider: &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
-		}})
+		},
+	}
+	if *mode == "http" {
+		options.Network = "tcp"
+		options.Address = *address
+	}
+	server := lsp.NewServer(options)
 
-	protoserver.InitLogger(*slogger)
 	protobuf := protoserver.NewServer()
 	withProtobuf(server, protobuf)
 
@@ -52,22 +49,6 @@ func withProtobuf(server *lsp.Server, protobuf protolsp.ProtoLSP) {
 	server.OnDidChangeTextDocument(protobuf.TextDocumentDidChange)
 	server.OnDidOpenTextDocument(protobuf.TextDocumentDidOpen)
 	server.OnReferences(protobuf.References)
-}
-
-// LogForwarder forwards bytes to a structured logger.
-type LogForwarder struct {
-	destination *slog.Logger
-	disabled    bool
-}
-
-func (l *LogForwarder) Write(p []byte) (int, error) {
-	if l.disabled {
-		return len(p), nil
-	}
-
-	s := string(p)
-	l.destination.Info(s)
-	return len(p), nil
 }
 
 func parseLogLevel(level string) slog.Level {
@@ -84,4 +65,33 @@ func parseLogLevel(level string) slog.Level {
 		slog.Warn("unknown log level defaulting to info", slog.String("level", level))
 		return slog.LevelInfo
 	}
+}
+
+func setupLoggers() {
+	level := parseLogLevel(*logLevel)
+
+	slogWriters := []io.Writer{}
+	// If the server is started in stdio mode, we don't want to log to stdout
+	// since that will be used for communication between the client and server.
+	if *mode != "stdio" {
+		slogWriters = append(slogWriters, os.Stdout)
+	}
+	// TODO: Add support for logging to file
+	slogWriter := io.MultiWriter(slogWriters...)
+	slogger := slog.New(slog.NewJSONHandler(slogWriter, &slog.HandlerOptions{
+		Level: level,
+	}))
+
+	// Logs from the LSP server are forwarded to the structured logger.
+	lspWriter := slogWriter
+	// If in stdio-mode then we need to log to stderr as well (since stdout is
+	// used for communication), if not then we want to avoid stderr since the
+	// structured logger is setup to log to stdout (which would cause duplicated
+	// logs).
+	if *mode == "stdio" {
+		lspWriter = io.MultiWriter(os.Stderr, slogWriter)
+	}
+	protoserver.InitLogger(*slogger)
+	lsplogger := log.New(lspWriter, "", log.LstdFlags)
+	logs.Init(lsplogger)
 }

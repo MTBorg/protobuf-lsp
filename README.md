@@ -10,23 +10,39 @@ expect any stability.
 
 ## Usage
 
-At the moment the server is run over tcp as a standalone process. Start the
-server by running:
+### Coc.nvim
+
+#### http-mode
+
+This requires the language server to be started before connecting with the
+client:
 
 ```shell
-go run cmd/server/main.go --address=<address>
+go run cmd/server/main.go --mode=http
 ```
-
-### Coc.nvim
 
 Add this `lanugageserver`-configuration to your `coc-settings.json`-file:
 
 ```json
 "languageserver": [
-    "proto": {
+    "proto-http": {
       "filetypes": ["proto"],
       "host": "127.0.0.1",
       "port": 8080
+    }
+]
+```
+
+#### stdio-mode
+
+This requires a binary of the language server.
+Add this `lanugageserver`-configuration to your `coc-settings.json`-file:
+
+```json
+"languageserver": [
+    "proto-stdio": {
+      "filetypes": ["proto"],
+      "command": "<path to your binary>",
     }
 ]
 ```

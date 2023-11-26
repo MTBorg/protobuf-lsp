@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/TobiasYin/go-lsp/lsp/defines"
@@ -49,7 +50,7 @@ func prettyPrint(symbols []Symbol) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%s\n", d)
+	logger.Debug("symbols", slog.String("symbols", string(d)))
 }
 
 func Walk(proto *parser.Proto, handlers ...handler) {
