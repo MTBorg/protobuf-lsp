@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	protolsp "github.com/MTBorg/protobuf-lsp/protolsp"
-	protoserver "github.com/MTBorg/protobuf-lsp/protolsp/server"
+	protolsp "github.com/MTBorg/protobuf-lsp/internal"
+	protoserver "github.com/MTBorg/protobuf-lsp/internal/server"
 	"github.com/TobiasYin/go-lsp/logs"
 	"github.com/TobiasYin/go-lsp/lsp"
 	"github.com/TobiasYin/go-lsp/lsp/defines"
