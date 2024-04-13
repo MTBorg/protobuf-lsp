@@ -25,33 +25,32 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 	Walk(got,
 		withHandler(func(m *parser.Message) {
 			symbol := symbolFromMessage(m)
-			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 		withHandler(func(v *parser.Field) {
 			symbol := symbolFromField(v)
-			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 		withHandler(func(v *parser.Import) {
 			symbol := symbolFromImport(v)
-			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
 		withHandler(func(v *parser.RPC) {
 			if v.RPCRequest != nil {
 				requestSymbol := symbolFromRPCRequest(v.RPCRequest)
-				requestSymbol.Uri = uri
 				symbols = append(symbols, requestSymbol)
 			}
 
 			if v.RPCResponse != nil {
 				responseSymbol := symbolFromRPCResponse(v.RPCResponse)
-				responseSymbol.Uri = uri
 				symbols = append(symbols, responseSymbol)
 			}
 		}),
 	)
+
+	for _, symbol := range symbols {
+		symbol.SetURI(uri)
+	}
 
 	// prettyPrint(symbols)
 
@@ -101,37 +100,37 @@ func getChildren(v parser.Visitee) []parser.Visitee {
 	return nil
 }
 
-func symbolFromMessage(m *parser.Message) MessageSymbol {
-	return MessageSymbol{
+func symbolFromMessage(m *parser.Message) *MessageSymbol {
+	return &MessageSymbol{
 		SymbolBase: newSymbolBase(m.Meta),
 		name:       m.MessageName,
 	}
 }
 
-func symbolFromField(f *parser.Field) FieldSymbol {
-	return FieldSymbol{
+func symbolFromField(f *parser.Field) *FieldSymbol {
+	return &FieldSymbol{
 		SymbolBase: newSymbolBase(f.Meta),
 		Name:       f.FieldName,
 		TypeName:   f.Type,
 	}
 }
 
-func symbolFromImport(i *parser.Import) ImportSymbol {
-	return ImportSymbol{
+func symbolFromImport(i *parser.Import) *ImportSymbol {
+	return &ImportSymbol{
 		SymbolBase: newSymbolBase(i.Meta),
 		ImportPath: strings.Trim(i.Location, "\""),
 	}
 }
 
-func symbolFromRPCRequest(r *parser.RPCRequest) RPCRequestSymbol {
-	return RPCRequestSymbol{
+func symbolFromRPCRequest(r *parser.RPCRequest) *RPCRequestSymbol {
+	return &RPCRequestSymbol{
 		TypeName:   r.MessageType,
 		SymbolBase: newSymbolBase(r.Meta),
 	}
 }
 
-func symbolFromRPCResponse(r *parser.RPCResponse) RPCResponseSymbol {
-	return RPCResponseSymbol{
+func symbolFromRPCResponse(r *parser.RPCResponse) *RPCResponseSymbol {
+	return &RPCResponseSymbol{
 		TypeName:   r.MessageType,
 		SymbolBase: newSymbolBase(r.Meta),
 	}

@@ -9,6 +9,7 @@ import (
 type Symbol interface {
 	Location() defines.Location
 	URI() string
+	SetURI(uri string)
 }
 
 type Nameable interface {
@@ -31,15 +32,19 @@ type SymbolBase struct {
 	Uri string
 }
 
-func (b SymbolBase) Location() defines.Location {
+func (b *SymbolBase) Location() defines.Location {
 	uri := b.Uri
 	loc := b.Loc
 	loc.Uri = defines.DocumentUri(uri)
 	return loc
 }
 
-func (b SymbolBase) URI() string {
+func (b *SymbolBase) URI() string {
 	return string(b.Uri)
+}
+
+func (b *SymbolBase) SetURI(uri string) {
+	b.Uri = uri
 }
 
 type SymbolLookup []Symbol
@@ -152,7 +157,7 @@ func toDefines(symbol Symbol) defines.SymbolInformation {
 	}
 
 	switch t := symbol.(type) {
-	case FieldSymbol:
+	case *FieldSymbol:
 		info.Name = t.Name
 		info.Kind = defines.SymbolKindField
 	}

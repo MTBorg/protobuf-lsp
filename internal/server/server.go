@@ -99,10 +99,10 @@ func (s *server) addDocument(uri string, content string) error {
 
 	s.symbols = s.symbols.mergeWithURI(symbols, uri)
 
-	importSymbols := SymbolLookup(symbols).BySymbolType(ImportSymbol{})
+	importSymbols := SymbolLookup(symbols).BySymbolType(&ImportSymbol{})
 
 	for _, symbol := range importSymbols {
-		importSymbol := symbol.(ImportSymbol)
+		importSymbol := symbol.(*ImportSymbol)
 		content, err := os.ReadFile("./" + importSymbol.ImportPath)
 		if err != nil {
 			return fmt.Errorf("read import: %w", err)
@@ -140,7 +140,7 @@ func (s *server) getSymbolReferences(textDocumentURI string, position defines.Po
 	}
 
 	rootSymbol := *cursorSymbol
-	if _, ok := (*cursorSymbol).(MessageSymbol); !ok {
+	if _, ok := (*cursorSymbol).(*MessageSymbol); !ok {
 		s, err := s.typeDefinition(*cursorSymbol)
 		if err != nil {
 			return nil, fmt.Errorf("symbol definition: %w", err)
@@ -171,7 +171,7 @@ func (s *server) typeDefinition(symbol Symbol) (Symbol, error) {
 		return nil, fmt.Errorf("symbol %T is not typeable", symbol)
 	}
 
-	match := FilterUsingSymbolTypePredicate(s.symbols, func(m MessageSymbol) bool {
+	match := FilterUsingSymbolTypePredicate(s.symbols, func(m *MessageSymbol) bool {
 		return m.Name() == typedSymbol.Type()
 	}).First()
 	if match == nil {

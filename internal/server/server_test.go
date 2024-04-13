@@ -12,7 +12,7 @@ import (
 func TestDefinition(t *testing.T) {
 	ctx := context.Background()
 	symbols := []Symbol{
-		MessageSymbol{
+		&MessageSymbol{
 			name: "Foo",
 			SymbolBase: SymbolBase{
 				Uri: "file:///test.proto",
@@ -30,7 +30,7 @@ func TestDefinition(t *testing.T) {
 				},
 			},
 		},
-		MessageSymbol{
+		&MessageSymbol{
 			name: "Bar",
 			SymbolBase: SymbolBase{
 				Uri: "file:///test.proto",
@@ -48,7 +48,7 @@ func TestDefinition(t *testing.T) {
 				},
 			},
 		},
-		FieldSymbol{
+		&FieldSymbol{
 			Name:     "foo",
 			TypeName: "Foo",
 			SymbolBase: SymbolBase{
