@@ -53,7 +53,7 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 		}),
 	)
 
-	prettyPrint(symbols)
+	// prettyPrint(symbols)
 
 	return symbols, nil
 }
@@ -103,72 +103,37 @@ func getChildren(v parser.Visitee) []parser.Visitee {
 
 func symbolFromMessage(m *parser.Message) MessageSymbol {
 	return MessageSymbol{
-		SymbolBase: SymbolBase{
-			Loc: defines.Location{
-				Range: defines.Range{
-					Start: parserPositionToDefinesPosition(m.Meta.Pos),
-					End:   parserPositionToDefinesPosition(m.Meta.LastPos),
-				},
-			},
-		},
-		name: m.MessageName,
+		SymbolBase: newSymbolBase(m.Meta),
+		name:       m.MessageName,
 	}
 }
 
 func symbolFromField(f *parser.Field) FieldSymbol {
 	return FieldSymbol{
-		SymbolBase: SymbolBase{
-			Loc: defines.Location{
-				Range: defines.Range{
-					Start: parserPositionToDefinesPosition(f.Meta.Pos),
-					End:   parserPositionToDefinesPosition(f.Meta.LastPos),
-				},
-			},
-		},
-		Name:     f.FieldName,
-		TypeName: f.Type,
+		SymbolBase: newSymbolBase(f.Meta),
+		Name:       f.FieldName,
+		TypeName:   f.Type,
 	}
 }
 
 func symbolFromImport(i *parser.Import) ImportSymbol {
 	return ImportSymbol{
-		SymbolBase: SymbolBase{
-			Loc: defines.Location{
-				Range: defines.Range{
-					Start: parserPositionToDefinesPosition(i.Meta.Pos),
-					End:   parserPositionToDefinesPosition(i.Meta.LastPos),
-				},
-			},
-		},
+		SymbolBase: newSymbolBase(i.Meta),
 		ImportPath: strings.Trim(i.Location, "\""),
 	}
 }
 
 func symbolFromRPCRequest(r *parser.RPCRequest) RPCRequestSymbol {
 	return RPCRequestSymbol{
-		TypeName: r.MessageType,
-		SymbolBase: SymbolBase{
-			Loc: defines.Location{
-				Range: defines.Range{
-					Start: parserPositionToDefinesPosition(r.Meta.Pos),
-					End:   parserPositionToDefinesPosition(r.Meta.LastPos),
-				},
-			},
-		},
+		TypeName:   r.MessageType,
+		SymbolBase: newSymbolBase(r.Meta),
 	}
 }
 
 func symbolFromRPCResponse(r *parser.RPCResponse) RPCResponseSymbol {
 	return RPCResponseSymbol{
-		TypeName: r.MessageType,
-		SymbolBase: SymbolBase{
-			Loc: defines.Location{
-				Range: defines.Range{
-					Start: parserPositionToDefinesPosition(r.Meta.Pos),
-					End:   parserPositionToDefinesPosition(r.Meta.LastPos),
-				},
-			},
-		},
+		TypeName:   r.MessageType,
+		SymbolBase: newSymbolBase(r.Meta),
 	}
 }
 
@@ -176,5 +141,16 @@ func parserPositionToDefinesPosition(p meta.Position) defines.Position {
 	return defines.Position{
 		Line:      uint(p.Line) - 1,
 		Character: uint(p.Column) - 1,
+	}
+}
+
+func newSymbolBase(meta meta.Meta) SymbolBase {
+	return SymbolBase{
+		Loc: defines.Location{
+			Range: defines.Range{
+				Start: parserPositionToDefinesPosition(meta.Pos),
+				End:   parserPositionToDefinesPosition(meta.LastPos),
+			},
+		},
 	}
 }
