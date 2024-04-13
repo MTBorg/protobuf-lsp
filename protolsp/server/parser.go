@@ -38,6 +38,19 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 			symbol.Uri = uri
 			symbols = append(symbols, symbol)
 		}),
+		withHandler(func(v *parser.RPC) {
+			if v.RPCRequest != nil {
+				requestSymbol := symbolFromRPCRequest(v.RPCRequest)
+				requestSymbol.Uri = uri
+				symbols = append(symbols, requestSymbol)
+			}
+
+			if v.RPCResponse != nil {
+				responseSymbol := symbolFromRPCResponse(v.RPCResponse)
+				responseSymbol.Uri = uri
+				symbols = append(symbols, responseSymbol)
+			}
+		}),
 	)
 
 	prettyPrint(symbols)
@@ -112,8 +125,8 @@ func symbolFromField(f *parser.Field) FieldSymbol {
 				},
 			},
 		},
-		Name: f.FieldName,
-		Type: f.Type,
+		Name:     f.FieldName,
+		TypeName: f.Type,
 	}
 }
 
@@ -128,6 +141,34 @@ func symbolFromImport(i *parser.Import) ImportSymbol {
 			},
 		},
 		ImportPath: strings.Trim(i.Location, "\""),
+	}
+}
+
+func symbolFromRPCRequest(r *parser.RPCRequest) RPCRequestSymbol {
+	return RPCRequestSymbol{
+		TypeName: r.MessageType,
+		SymbolBase: SymbolBase{
+			Loc: defines.Location{
+				Range: defines.Range{
+					Start: parserPositionToDefinesPosition(r.Meta.Pos),
+					End:   parserPositionToDefinesPosition(r.Meta.LastPos),
+				},
+			},
+		},
+	}
+}
+
+func symbolFromRPCResponse(r *parser.RPCResponse) RPCResponseSymbol {
+	return RPCResponseSymbol{
+		TypeName: r.MessageType,
+		SymbolBase: SymbolBase{
+			Loc: defines.Location{
+				Range: defines.Range{
+					Start: parserPositionToDefinesPosition(r.Meta.Pos),
+					End:   parserPositionToDefinesPosition(r.Meta.LastPos),
+				},
+			},
+		},
 	}
 }
 

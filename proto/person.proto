@@ -6,6 +6,14 @@ package test;
 
 import "proto/address.proto";
 
+service PersonService {
+	rpc GetPerson(GetPersonRequest) returns (Person) {}
+}
+
+message GetPersonRequest {
+	int32 id = 1;
+}
+
 message Person {
   string name = 1;
   int32 id = 2;

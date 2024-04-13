@@ -49,8 +49,8 @@ func TestDefinition(t *testing.T) {
 			},
 		},
 		FieldSymbol{
-			Name: "foo",
-			Type: "Foo",
+			Name:     "foo",
+			TypeName: "Foo",
 			SymbolBase: SymbolBase{
 				Uri: "file:///test.proto",
 				Loc: defines.Location{

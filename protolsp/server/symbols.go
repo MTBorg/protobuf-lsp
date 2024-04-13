@@ -12,7 +12,16 @@ type Symbol interface {
 }
 
 type Nameable interface {
+	Symbol
+
 	Name() string
+}
+
+// A symbol that has a type
+type Typeable interface {
+	Symbol
+
+	Type() string
 }
 
 type SymbolBase struct {
@@ -90,14 +99,38 @@ func (l SymbolLookup) First() *Symbol {
 type FieldSymbol struct {
 	SymbolBase
 
-	Name string
-	Type string
+	Name     string
+	TypeName string
+}
+
+func (s FieldSymbol) Type() string {
+	return s.TypeName
 }
 
 type ImportSymbol struct {
 	SymbolBase
 
 	ImportPath string
+}
+
+type RPCRequestSymbol struct {
+	SymbolBase
+
+	TypeName string
+}
+
+func (s RPCRequestSymbol) Type() string {
+	return s.TypeName
+}
+
+type RPCResponseSymbol struct {
+	SymbolBase
+
+	TypeName string
+}
+
+func (s RPCResponseSymbol) Type() string {
+	return s.TypeName
 }
 
 type MessageSymbol struct {

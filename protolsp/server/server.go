@@ -153,8 +153,8 @@ func (s *server) getSymbolReferences(textDocumentURI string, position defines.Po
 	}
 	name := rootSymbol.(Nameable).Name()
 
-	symbols := FilterUsingSymbolTypePredicate(s.symbols, func(m FieldSymbol) bool {
-		return m.Type == name
+	symbols := FilterUsingSymbolTypePredicate(s.symbols, func(m Typeable) bool {
+		return m.Type() == name
 	})
 
 	var result []defines.Location
@@ -166,16 +166,16 @@ func (s *server) getSymbolReferences(textDocumentURI string, position defines.Po
 }
 
 func (s *server) typeDefinition(symbol Symbol) (Symbol, error) {
-	fieldSymbol, ok := symbol.(FieldSymbol)
+	typedSymbol, ok := symbol.(Typeable)
 	if !ok {
-		return nil, fmt.Errorf("don't know how to lookup definition for symbol %T", symbol)
+		return nil, fmt.Errorf("symbol %T is not typeable", symbol)
 	}
 
 	match := FilterUsingSymbolTypePredicate(s.symbols, func(m MessageSymbol) bool {
-		return m.Name() == fieldSymbol.Type
+		return m.Name() == typedSymbol.Type()
 	}).First()
 	if match == nil {
-		return nil, fmt.Errorf("symbol %q not found", fieldSymbol.Type)
+		return nil, fmt.Errorf("symbol %q not found", typedSymbol.Type())
 	}
 	return *match, nil
 }
