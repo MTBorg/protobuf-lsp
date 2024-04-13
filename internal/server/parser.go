@@ -12,7 +12,7 @@ import (
 	"github.com/yoheimuta/go-protoparser/v4/parser/meta"
 )
 
-type handler func(v parser.Visitee)
+type handler func(T parser.Visitee) []Symbol
 
 func parseDocument(uri string, content string) ([]Symbol, error) {
 	r := strings.NewReader(content)
@@ -21,31 +21,11 @@ func parseDocument(uri string, content string) ([]Symbol, error) {
 		return nil, fmt.Errorf("failed to parse, err %v\n", err)
 	}
 
-	var symbols []Symbol
-	Walk(got,
-		withHandler(func(m *parser.Message) {
-			symbol := symbolFromMessage(m)
-			symbols = append(symbols, symbol)
-		}),
-		withHandler(func(v *parser.Field) {
-			symbol := symbolFromField(v)
-			symbols = append(symbols, symbol)
-		}),
-		withHandler(func(v *parser.Import) {
-			symbol := symbolFromImport(v)
-			symbols = append(symbols, symbol)
-		}),
-		withHandler(func(v *parser.RPC) {
-			if v.RPCRequest != nil {
-				requestSymbol := symbolFromRPCRequest(v.RPCRequest)
-				symbols = append(symbols, requestSymbol)
-			}
-
-			if v.RPCResponse != nil {
-				responseSymbol := symbolFromRPCResponse(v.RPCResponse)
-				symbols = append(symbols, responseSymbol)
-			}
-		}),
+	symbols := Walk(got,
+		withHandler(handleMessage),
+		withHandler(handleField),
+		withHandler(handleImport),
+		withHandler(handleRPC),
 	)
 
 	for _, symbol := range symbols {
@@ -65,26 +45,31 @@ func prettyPrint(symbols []Symbol) {
 	logger.Debug("symbols", slog.String("symbols", string(d)))
 }
 
-func Walk(proto *parser.Proto, handlers ...handler) {
-	walk(proto.ProtoBody, handlers...)
+func Walk(proto *parser.Proto, handlers ...handler) []Symbol {
+	return walk(proto.ProtoBody, handlers...)
 }
 
-func walk(body []parser.Visitee, handlers ...handler) {
+func walk(body []parser.Visitee, handlers ...handler) []Symbol {
+	var symbols []Symbol
 	for _, element := range body {
 		for _, handler := range handlers {
-			handler(element)
+			s := handler(element)
+			symbols = append(symbols, s...)
 		}
 
 		chilren := getChildren(element)
-		walk(chilren, handlers...)
+		s := walk(chilren, handlers...)
+		symbols = append(symbols, s...)
 	}
+	return symbols
 }
 
-func withHandler[V parser.Visitee](apply func(v V)) handler {
-	return func(v parser.Visitee) {
+func withHandler[V parser.Visitee](apply func(v V) []Symbol) handler {
+	return func(v parser.Visitee) []Symbol {
 		if s, ok := v.(V); ok {
-			apply(s)
+			return apply(s)
 		}
+		return nil
 	}
 }
 
@@ -152,4 +137,29 @@ func newSymbolBase(meta meta.Meta) SymbolBase {
 			},
 		},
 	}
+}
+
+func handleMessage(m *parser.Message) []Symbol {
+	return []Symbol{symbolFromMessage(m)}
+}
+
+func handleField(f *parser.Field) []Symbol {
+	return []Symbol{symbolFromField(f)}
+}
+
+func handleImport(i *parser.Import) []Symbol {
+	return []Symbol{symbolFromImport(i)}
+}
+
+func handleRPC(r *parser.RPC) []Symbol {
+	var symbols []Symbol
+	if r.RPCRequest != nil {
+		symbols = append(symbols, symbolFromRPCRequest(r.RPCRequest))
+	}
+
+	if r.RPCResponse != nil {
+		symbols = append(symbols, symbolFromRPCResponse(r.RPCResponse))
+	}
+
+	return symbols
 }
