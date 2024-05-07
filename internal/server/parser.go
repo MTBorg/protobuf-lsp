@@ -95,7 +95,7 @@ func symbolFromMessage(m *parser.Message) *MessageSymbol {
 func symbolFromField(f *parser.Field) *FieldSymbol {
 	return &FieldSymbol{
 		SymbolBase: newSymbolBase(f.Meta),
-		Name:       f.FieldName,
+		name:       f.FieldName,
 		TypeName:   f.Type,
 	}
 }

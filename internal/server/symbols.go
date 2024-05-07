@@ -29,6 +29,7 @@ type Nameable interface {
 
 var (
 	_ Nameable = &MessageSymbol{}
+	_ Nameable = &FieldSymbol{}
 )
 
 // A symbol that has a type
@@ -123,12 +124,16 @@ func (l SymbolLookup) First() *Symbol {
 type FieldSymbol struct {
 	SymbolBase
 
-	Name     string
+	name     string
 	TypeName string
 }
 
 func (s FieldSymbol) Type() string {
 	return s.TypeName
+}
+
+func (s FieldSymbol) Name() string {
+	return s.name
 }
 
 type ImportSymbol struct {
@@ -177,7 +182,7 @@ func toDefines(symbol Symbol) defines.SymbolInformation {
 
 	switch t := symbol.(type) {
 	case *FieldSymbol:
-		info.Name = t.Name
+		info.Name = t.name
 		info.Kind = defines.SymbolKindField
 	}
 

@@ -49,7 +49,7 @@ func TestDefinition(t *testing.T) {
 			},
 		},
 		&FieldSymbol{
-			Name:     "foo",
+			name:     "foo",
 			TypeName: "Foo",
 			SymbolBase: SymbolBase{
 				Uri: "file:///test.proto",
