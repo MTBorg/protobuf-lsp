@@ -71,10 +71,14 @@ func (s *server) TextDocumentDidOpen(ctx context.Context, params *defines.DidOpe
 }
 
 func (s *server) References(ctx context.Context, params *defines.ReferenceParams) (*[]defines.Location, error) {
-	uri := string(params.TextDocument.Uri)
 	position := params.Position
 
-	locations, err := s.getSymbolReferences(uri, position)
+	cursorSymbol := symbolUnderCursor(s.symbols, position)
+	if cursorSymbol == nil {
+		return nil, fmt.Errorf("found no symbol under cursor at position %+v", position)
+	}
+
+	locations, err := s.getSymbolReferences(*cursorSymbol)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +142,9 @@ func (s *server) getSymbol(textDocumentURI string, position defines.Position) (*
 	return &d, nil
 }
 
-func (s *server) getSymbolReferences(textDocumentURI string, position defines.Position) (*[]defines.Location, error) {
-	cursorSymbol := symbolUnderCursor(s.symbols, position)
-	if cursorSymbol == nil {
-		return nil, fmt.Errorf("found no symbol under cursor at position %+v", position)
-	}
-
-	rootSymbol := *cursorSymbol
-	if typeableSymbol, ok := (*cursorSymbol).(Typeable); ok {
+func (s *server) getSymbolReferences(symbol Symbol) (*[]defines.Location, error) {
+	rootSymbol := symbol
+	if typeableSymbol, ok := (symbol).(Typeable); ok {
 		s, err := s.typeDefinition(typeableSymbol)
 		if err != nil {
 			return nil, fmt.Errorf("symbol definition: %w", err)
