@@ -124,9 +124,14 @@ func (s *server) getSymbol(textDocumentURI string, position defines.Position) (*
 		return nil, fmt.Errorf("found no symbol under cursor at position %+v", position)
 	}
 
-	targetSymbol, err := s.typeDefinition(*cursorSymbol)
-	if err != nil {
-		return nil, fmt.Errorf("symbol definition: %w", err)
+	targetSymbol := *cursorSymbol
+
+	if typeableSymbol, ok := (*cursorSymbol).(Typeable); ok {
+		s, err := s.typeDefinition(typeableSymbol)
+		if err != nil {
+			return nil, fmt.Errorf("symbol definition: %w", err)
+		}
+		targetSymbol = s
 	}
 
 	d := toDefines(targetSymbol)
@@ -140,8 +145,8 @@ func (s *server) getSymbolReferences(textDocumentURI string, position defines.Po
 	}
 
 	rootSymbol := *cursorSymbol
-	if _, ok := (*cursorSymbol).(*MessageSymbol); !ok {
-		s, err := s.typeDefinition(*cursorSymbol)
+	if typeableSymbol, ok := (*cursorSymbol).(Typeable); ok {
+		s, err := s.typeDefinition(typeableSymbol)
 		if err != nil {
 			return nil, fmt.Errorf("symbol definition: %w", err)
 		}
@@ -165,19 +170,14 @@ func (s *server) getSymbolReferences(textDocumentURI string, position defines.Po
 	return &result, nil
 }
 
-func (s *server) typeDefinition(symbol Symbol) (Symbol, error) {
-	typedSymbol, ok := symbol.(Typeable)
-	if !ok {
-		return nil, fmt.Errorf("symbol %T is not typeable", symbol)
-	}
-
+func (s *server) typeDefinition(symbol Typeable) (*MessageSymbol, error) {
 	match := FilterUsingSymbolTypePredicate(s.symbols, func(m *MessageSymbol) bool {
-		return m.Name() == typedSymbol.Type()
+		return m.Name() == symbol.Type()
 	}).First()
 	if match == nil {
-		return nil, fmt.Errorf("symbol %q not found", typedSymbol.Type())
+		return nil, fmt.Errorf("symbol %q not found", symbol.Type())
 	}
-	return *match, nil
+	return (*match).(*MessageSymbol), nil
 }
 
 func positionBetween(p, start, end defines.Position) bool {
