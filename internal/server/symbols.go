@@ -12,11 +12,24 @@ type Symbol interface {
 	SetURI(uri string)
 }
 
+var (
+	_ Symbol = &SymbolBase{}
+	_ Symbol = &FieldSymbol{}
+	_ Symbol = &ImportSymbol{}
+	_ Symbol = &RPCRequestSymbol{}
+	_ Symbol = &RPCResponseSymbol{}
+	_ Symbol = &MessageSymbol{}
+)
+
 type Nameable interface {
 	Symbol
 
 	Name() string
 }
+
+var (
+	_ Nameable = &MessageSymbol{}
+)
 
 // A symbol that has a type
 type Typeable interface {
@@ -24,6 +37,12 @@ type Typeable interface {
 
 	Type() string
 }
+
+var (
+	_ Typeable = &FieldSymbol{}
+	_ Typeable = &RPCRequestSymbol{}
+	_ Typeable = &RPCResponseSymbol{}
+)
 
 type SymbolBase struct {
 	// Don't use the URI from the Location, because it seems to always be empty
